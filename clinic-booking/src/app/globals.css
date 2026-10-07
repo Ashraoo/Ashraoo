@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+  --color-brand-50: #effaf8;
+  --color-brand-100: #d5f2ec;
+  --color-brand-200: #a9e4d9;
+  --color-brand-500: #14907b;
+  --color-brand-600: #0f7867;
+  --color-brand-700: #0c5f52;
+  --color-brand-900: #083d35;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: #f6f8f8;
+  color: #0f172a;
+}
+
+/* Phone numbers and refs stay left-to-right inside RTL text. */
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
