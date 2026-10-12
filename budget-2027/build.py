@@ -187,10 +187,11 @@ def style(c, *, bold=False, size=10, color="222222", fill=None, fmt=None, align=
         c.border = BOX
 
 
-def header_row(ws, row, col, labels, fill=C_DARK):
+def header_row(ws, row, col, labels, fill=C_DARK, height=30):
     for i, lab in enumerate(labels):
         style(ws.cell(row=row, column=col + i, value=lab), bold=True, color="FFFFFF", fill=fill, align="center")
-    ws.row_dimensions[row].height = 30
+    if height:
+        ws.row_dimensions[row].height = height
 
 
 def title(ws, text, sub=None, width=10):
@@ -220,7 +221,8 @@ def widths(ws, spec):
         ws.column_dimensions[col].width = w
 
 
-def build(lang):
+def build(lang, out=OUT, shots=False):
+    """shots=True: one printed page per sheet (used to render marketing screenshots)."""
     t = T[lang]
     L = 0 if lang == "ar" else 1
     q = lambda name: f"'{name}'"  # always quote sheet names (Arabic / spaces)
@@ -311,7 +313,7 @@ def build(lang):
         calc(ws.cell(row=r, column=6),
              f'=IF(B{r}="",0,SUMIFS(txAmt,txCat,B{r},txDate,">="&DATE(cfgYear,1,1),txDate,"<"&DATE(cfgYear+1,1,1)))', NUM)
         calc(ws.cell(row=r, column=7), f"=E{r}-F{r}", NUM)
-        calc(ws.cell(row=r, column=8), f"=IF(E{r}=0,0,F{r}/E{r})", PCT)
+        calc(ws.cell(row=r, column=8), f'=IF(OR(B{r}="",E{r}=0),"",F{r}/E{r})', PCT)
     for r, lab, typ in ((42, t["cat_inc_total"], t["inc"]), (43, t["cat_exp_total"], t["exp"])):
         style(ws.cell(row=r, column=2, value=lab), bold=True, fill=C_CARD)
         style(ws.cell(row=r, column=3, value=typ), bold=True, fill=C_CARD, align="center")
@@ -417,15 +419,15 @@ def build(lang):
     # ================= Ramadan =================
     ws = ws_ram
     title(ws, "☾ " + t["s_ram"] + " 1448", width=12)
-    header_row(ws, 5, 2, [t["r_dates"], ""])
+    header_row(ws, 5, 2, [t["r_dates"], ""], height=None)
     rows = [(t["r_start"], "=cfgRStart", DATE), (t["r_end"], "=cfgREnd", DATE),
             (t["r_days_left"], "=MAX(0,cfgRStart-TODAY())", "0")]
     for i, (lab, f, fmt) in enumerate(rows):
         style(ws.cell(row=6 + i, column=2, value=lab), bold=True)
         calc(ws.cell(row=6 + i, column=3), f, fmt, bold=True)
     # budget
-    header_row(ws, 10, 2, [t["r_budget"], "", "", "", ""], fill=C_ACCENT)
-    header_row(ws, 11, 2, t["r_bhdr"])
+    header_row(ws, 10, 2, [t["r_budget"], "", "", "", ""], fill=C_ACCENT, height=None)
+    header_row(ws, 11, 2, t["r_bhdr"], height=None)
     dv_rcat = DataValidation(type="list", formula1="=catNames", allow_blank=True)
     ws.add_data_validation(dv_rcat)
     rcats = list(RAMADAN_CATS.items())
@@ -438,7 +440,7 @@ def build(lang):
         calc(ws.cell(row=r, column=4),
              f'=IF(B{r}="",0,SUMIFS(txAmt,txCat,B{r},txDate,">="&cfgRStart,txDate,"<="&cfgREnd))', NUM)
         calc(ws.cell(row=r, column=5), f"=N(C{r})-D{r}", NUM)
-        calc(ws.cell(row=r, column=6), f"=IF(N(C{r})=0,0,D{r}/C{r})", PCT)
+        calc(ws.cell(row=r, column=6), f'=IF(N(C{r})=0,"",D{r}/C{r})', PCT)
     dv_rcat.add("B12:B19")
     style(ws["B20"], bold=True, fill=C_CARD)
     ws["B20"] = t["total"]
@@ -453,7 +455,7 @@ def build(lang):
     ws.conditional_formatting.add("F12:F20", DataBarRule(start_type="num", start_value=0, end_type="num",
                                                          end_value=1, color=C_GOLD))
     # zakat
-    header_row(ws, 23, 2, [t["zakat"], ""], fill=C_GOLD)
+    header_row(ws, 23, 2, [t["zakat"], ""], fill=C_GOLD, height=None)
     for i, lab in enumerate(t["z_rows"]):
         style(ws.cell(row=24 + i, column=2, value=lab))
         inp(ws.cell(row=24 + i, column=3), ZAKAT_SAMPLE[lang][i], NUM)
@@ -479,10 +481,11 @@ def build(lang):
         r = 6 + d
         calc(ws.cell(row=r, column=8), f'=IF({d}>cfgRDays,"",{d})', "0")
         calc(ws.cell(row=r, column=9), f'=IF({d}>cfgRDays,"",cfgRStart+{d}-1)', DATE)
-        inp(ws.cell(row=r, column=10))
-        inp(ws.cell(row=r, column=11), fmt="0")
-        inp(ws.cell(row=r, column=12))
-        inp(ws.cell(row=r, column=13), fmt=NUM)
+        demo = d <= 12  # first 12 days filled as an example
+        inp(ws.cell(row=r, column=10), "✓" if demo else None)
+        inp(ws.cell(row=r, column=11), (20 if d % 3 else 15) if demo else None, "0")
+        inp(ws.cell(row=r, column=12), ("✓" if d not in (5, 9) else "✗") if demo else None)
+        inp(ws.cell(row=r, column=13), (round((50 if lang == "ar" else 5) * (1 + d % 4))) if demo else None, NUM)
     dv_chk.add("J7:J36")
     dv_chk.add("L7:L36")
     style(ws["H37"], bold=True, fill=C_CARD)
@@ -553,7 +556,7 @@ def build(lang):
     bar.set_categories(Reference(ws, min_col=2, min_row=11, max_row=22))
     bar.series[0].graphicalProperties.solidFill = C_ACCENT
     bar.series[1].graphicalProperties.solidFill = "E07A5F"
-    bar.height, bar.width = 9, 16
+    bar.height, bar.width = 9, 15
     ws.add_chart(bar, "J10")
     cs = ws_cat
     byc = BarChart()
@@ -565,13 +568,19 @@ def build(lang):
     byc.legend = None
     byc.y_axis.scaling.orientation = "minMax"
     byc.x_axis.scaling.orientation = "maxMin"  # first category on top
-    byc.height, byc.width = 16, 16
+    byc.height, byc.width = 11, 20
     ws.add_chart(byc, "B26")
     widths(ws, {c: 13 for c in "BCDEFGHIJKLM"})
 
+    if shots:
+        areas = [(ws_start, "B2:D23"), (ws_dash, "B2:P48"), (ws_tx, "B2:H40"), (ws_cat, "B2:T43"),
+                 (ws_goal, "B2:J17"), (ws_ram, "B2:M38")]
+        for sh, area in areas:
+            sh.print_area = area
+            sh.page_setup.fitToHeight = 1
     wb.active = 0
-    os.makedirs(OUT, exist_ok=True)
-    path = os.path.join(OUT, f"Planner-2027-{lang.upper()}.xlsx")
+    os.makedirs(out, exist_ok=True)
+    path = os.path.join(out, f"Planner-2027-{lang.upper()}.xlsx")
     wb.save(path)
     return path
 

@@ -26,7 +26,7 @@ Plan 2027 and Ramadan in one place. An automated budget dashboard that works in 
 ✅ Log a transaction in 5 seconds: date, category (dropdown), amount. Everything else is automatic
 ✅ Any currency · Printable · No subscription
 
-**What you get:** 1 .xlsx file (opens in Google Sheets, Excel, Numbers), plus a quick-start tab.
+**What you get:** 1 .xlsx file (opens in Google Sheets and Excel), plus a quick-start tab.
 **Digital download** — no physical item will be shipped.
 
 **Tags (13):** budget planner 2027, google sheets budget, excel budget template, ramadan planner, zakat calculator, savings tracker, finance dashboard, monthly budget, islamic planner, eid planner, expense tracker, savings goals, digital planner 2027
